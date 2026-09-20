@@ -1,32 +1,551 @@
-<!doctype html><html lang="de"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0b0d10"><link rel="manifest" href="manifest.json"><title>Football Hub</title>
-<style>
-body{margin:0;background:#0b0d10;color:#fff;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif}
-header{padding:50px 18px 15px}h1{margin:0;font-size:31px}.sub{color:#8e96a3;margin-top:5px}
-main{padding:0 14px 100px}.card{background:#151922;border-radius:20px;padding:16px;margin:10px 0}.muted{color:#8e96a3}
-.bottom{position:fixed;bottom:0;left:0;right:0;background:#12151b;padding:12px;display:flex;justify-content:space-around}.bottom button{background:none;border:0;color:#8e96a3;font-size:12px}.bottom .active{color:#31d158}
-</style></head><body>
-<header><h1>⚽ Football Hub</h1><div class="sub">Weltweiter Fußball · Live</div></header>
-<main id="app"></main>
-<nav class="bottom">
-<button id="home" onclick="show('home')">⌂<br>Home</button>
-<button id="live" onclick="show('live')">●<br>Live</button>
-<button id="games" onclick="show('games')">▣<br>Spiele</button>
-<button id="table" onclick="show('table')">☷<br>Tabelle</button>
-<button id="search" onclick="show('search')">⌕<br>Suche</button>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0d10">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <title>Football Hub</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      background: #0b0d10;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+                   "Helvetica Neue", Arial, sans-serif;
+    }
+
+    .app {
+      max-width: 700px;
+      margin: auto;
+      min-height: 100vh;
+      padding-bottom: 90px;
+    }
+
+    header {
+      padding: 22px 18px 12px;
+      position: sticky;
+      top: 0;
+      background: rgba(11,13,16,.94);
+      backdrop-filter: blur(15px);
+      z-index: 10;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      color: #8d939c;
+      margin-top: 4px;
+      font-size: 14px;
+    }
+
+    .status {
+      margin: 12px 16px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #15191f;
+      color: #9da4ae;
+      font-size: 13px;
+    }
+
+    .section {
+      padding: 8px 16px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 800;
+      margin: 12px 0;
+    }
+
+    .match {
+      background: #15191f;
+      border-radius: 18px;
+      padding: 15px;
+      margin-bottom: 10px;
+    }
+
+    .league {
+      color: #9299a4;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .teams {
+      display: grid;
+      grid-template-columns: 1fr 70px 1fr;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .team {
+      text-align: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .team img {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto 7px;
+    }
+
+    .score {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .live {
+      color: #35e889;
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    .time {
+      color: #9299a4;
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    .empty {
+      background: #15191f;
+      border-radius: 18px;
+      padding: 25px;
+      text-align: center;
+      color: #969da7;
+    }
+
+    .error {
+      color: #ff7272;
+    }
+
+    nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(15,17,21,.96);
+      backdrop-filter: blur(18px);
+      border-top: 1px solid #242830;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 5px calc(10px + env(safe-area-inset-bottom));
+      z-index: 20;
+    }
+
+    nav button {
+      background: none;
+      border: 0;
+      color: #8d939c;
+      font-size: 11px;
+      min-width: 70px;
+    }
+
+    nav button.active {
+      color: white;
+    }
+
+    .nav-icon {
+      font-size: 21px;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .reload {
+      border: 0;
+      border-radius: 10px;
+      padding: 7px 11px;
+      background: #242a32;
+      color: white;
+      float: right;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <header>
+    <button class="reload" onclick="loadData()">↻</button>
+    <div class="title">⚽ Football Hub</div>
+    <div class="subtitle">Weltweiter Fußball · Live</div>
+  </header>
+
+  <div id="status" class="status">
+    Live-Daten werden geladen …
+  </div>
+
+  <main class="section">
+
+    <div class="section-title">
+      🔴 Jetzt live
+    </div>
+
+    <div id="matches">
+      <div class="empty">
+        Live-Spiele werden geladen …
+      </div>
+    </div>
+
+  </main>
+
+</div>
+
+<nav>
+  <button class="active">
+    <span class="nav-icon">🏠</span>
+    Start
+  </button>
+
+  <button>
+    <span class="nav-icon">🔴</span>
+    Live
+  </button>
+
+  <button>
+    <span class="nav-icon">⭐</span>
+    Favoriten
+  </button>
+
+  <button>
+    <span class="nav-icon">📊</span>
+    Tabellen
+  </button>
 </nav>
+
+
 <script>
-let page="home",matches=[];
-function nav(){document.querySelectorAll(".bottom button").forEach(b=>b.classList.remove("active"));document.getElementById(page).classList.add("active")}
-function show(p){page=p;nav();render()}
-function render(){
- const a=document.getElementById("app");
- if(page==="home")a.innerHTML='<h2>Jetzt live</h2><div class="card"><b>⚽ Football Hub ist bereit</b><p class="muted">Live-Fußball wird geladen.</p></div><div class="card"><b>🌍 Weltweiter Fußball</b><p class="muted">Live-Spiele, Ligen und Tabellen.</p></div>';
- if(page==="live")a.innerHTML='<h2>🔴 Live-Ticker</h2><div class="card"><b>Live-Daten werden geladen</b><p class="muted">Bitte kurz warten.</p></div>';
- if(page==="games")a.innerHTML='<h2>Spiele</h2><div class="card"><b>Spiele weltweit</b><p class="muted">Die aktuellen Spiele werden geladen.</p></div>';
- if(page==="table")a.innerHTML='<h2>Tabelle</h2><div class="card"><b>🏆 Tabellen</b><p class="muted">Die Tabellenfunktion ist vorbereitet.</p></div>';
- if(page==="search")a.innerHTML='<h2>Suche</h2><input style="width:100%;padding:14px;border-radius:12px;background:#171b23;color:white;border:0" placeholder="Team oder Liga"><div class="card"><p class="muted">Suche nach Vereinen und Ligen.</p></div>';
+
+let matches = [];
+
+
+/* =========================
+   LIVE-DATEN LADEN
+   ========================= */
+
+async function loadData() {
+
+  const status = document.getElementById("status");
+  const container = document.getElementById("matches");
+
+  status.className = "status";
+  status.textContent = "Live-Daten werden geladen …";
+
+  try {
+
+    const response = await fetch(
+      "data-live.json?time=" + Date.now(),
+      {
+        cache: "no-store"
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+
+    const data = await response.json();
+
+    if (!data.response || !Array.isArray(data.response)) {
+      throw new Error("Keine gültigen Fußball-Daten");
+    }
+
+    matches = data.response.map(function(fixture) {
+
+      const fixtureInfo = fixture.fixture || {};
+      const league = fixture.league || {};
+      const teams = fixture.teams || {};
+      const home = teams.home || {};
+      const away = teams.away || {};
+      const goals = fixture.goals || {};
+      const fixtureStatus = fixtureInfo.status || {};
+
+      return {
+
+        id: fixtureInfo.id,
+
+        league:
+          league.name || "Fußball",
+
+        home:
+          home.name || "Heim",
+
+        away:
+          away.name || "Auswärts",
+
+        homeLogo:
+          home.logo || "",
+
+        awayLogo:
+          away.logo || "",
+
+        homeScore:
+          goals.home ?? 0,
+
+        awayScore:
+          goals.away ?? 0,
+
+        status:
+          fixtureStatus.short || "",
+
+        statusLong:
+          fixtureStatus.long || "",
+
+        minute:
+          fixtureStatus.elapsed ?? null
+
+      };
+
+    });
+
+    renderMatches();
+
+    status.textContent =
+      "🟢 Live-Daten aktualisiert · " +
+      new Date().toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+
+  } catch (error) {
+
+    console.error(error);
+
+    status.className = "status error";
+
+    status.textContent =
+      "⚠️ Live-Daten konnten nicht geladen werden.";
+
+    container.innerHTML = `
+      <div class="empty">
+        <div style="font-size:32px;margin-bottom:10px;">⚽</div>
+        <b>Keine Live-Daten</b>
+        <div style="margin-top:8px;">
+          Bitte später erneut versuchen.
+        </div>
+      </div>
+    `;
+
+  }
+
 }
-nav();render();
-</script></body></html>
+
+
+/* =========================
+   LIVE-STATUS
+   ========================= */
+
+function isLive(status) {
+
+  return [
+    "1H",
+    "2H",
+    "ET",
+    "BT",
+    "P",
+    "LIVE",
+    "HT"
+  ].includes(status);
+
+}
+
+
+/* =========================
+   SPIELE ANZEIGEN
+   ========================= */
+
+function renderMatches() {
+
+  const container =
+    document.getElementById("matches");
+
+  if (!matches.length) {
+
+    container.innerHTML = `
+      <div class="empty">
+        <div style="font-size:32px;margin-bottom:10px;">
+          💤
+        </div>
+
+        <b>Momentan keine Live-Spiele</b>
+
+        <div style="margin-top:8px;">
+          Sobald Spiele laufen, erscheinen sie hier.
+        </div>
+      </div>
+    `;
+
+    return;
+  }
+
+
+  container.innerHTML =
+    matches.map(function(match) {
+
+      let statusText = "";
+
+      if (isLive(match.status)) {
+
+        statusText =
+          "🔴 LIVE" +
+          (
+            match.minute !== null
+            ? " · " + match.minute + "'"
+            : ""
+          );
+
+      } else {
+
+        statusText =
+          match.statusLong ||
+          match.status ||
+          "Spiel";
+
+      }
+
+
+      const homeLogo =
+        match.homeLogo
+        ? `<img src="${match.homeLogo}" alt="">`
+        : `<div style="font-size:35px;">⚽</div>`;
+
+
+      const awayLogo =
+        match.awayLogo
+        ? `<img src="${match.awayLogo}" alt="">`
+        : `<div style="font-size:35px;">⚽</div>`;
+
+
+      return `
+
+        <div class="match">
+
+          <div class="league">
+            ${escapeHtml(match.league)}
+          </div>
+
+          <div class="teams">
+
+            <div class="team">
+
+              ${homeLogo}
+
+              ${escapeHtml(match.home)}
+
+            </div>
+
+
+            <div class="score">
+
+              ${match.homeScore}
+              :
+              ${match.awayScore}
+
+              <div class="${
+                isLive(match.status)
+                ? "live"
+                : "time"
+              }">
+
+                ${escapeHtml(statusText)}
+
+              </div>
+
+            </div>
+
+
+            <div class="team">
+
+              ${awayLogo}
+
+              ${escapeHtml(match.away)}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      `;
+
+    }).join("");
+
+}
+
+
+/* =========================
+   SICHERHEIT
+   ========================= */
+
+function escapeHtml(value) {
+
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+
+/* =========================
+   START
+   ========================= */
+
+loadData();
+
+
+/*
+   Alle 60 Sekunden aktualisieren.
+   GitHub Actions aktualisiert die Datei
+   ungefähr alle 15 Minuten.
+*/
+
+setInterval(
+  loadData,
+  60000
+);
+
+
+/* Service Worker */
+
+if ("serviceWorker" in navigator) {
+
+  window.addEventListener(
+    "load",
+    function() {
+
+      navigator.serviceWorker
+        .register("./sw.js")
+        .catch(function(error) {
+          console.log("Service Worker:", error);
+        });
+
+    }
+  );
+
+}
+
+</script>
+
+</body>
+</html>
