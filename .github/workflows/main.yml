@@ -1,29 +1,67 @@
-name: Deploy Football Hub
+name: Football Hub
 
 on:
   push:
     branches: ["main"]
+    paths-ignore:
+      - "data-live.json"
+
+  schedule:
+    - cron: "*/15 * * * *"
+
+  workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
 jobs:
-  deploy:
+  football:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Update football data
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          if [ -z "$API_FOOTBALL_KEY" ]; then
+            echo "API_FOOTBALL_KEY fehlt"
+            exit 1
+          fi
+
+          curl -fsS \
+            -H "x-apisports-key: $API_FOOTBALL_KEY" \
+            "https://v3.football.api-sports.io/fixtures?live=all" \
+            -o data-live.json
+
+          echo "Football-Daten aktualisiert"
+
+      - name: Commit football data
+        run: |
+          git config user.name "football-hub-bot"
+          git config user.email "actions@users.noreply.github.com"
+
+          git add data-live.json
+
+          if git diff --cached --quiet; then
+            echo "Keine Änderung"
+            exit 0
+          fi
+
+          git commit -m "Update live football data"
+          git push
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload
+      - name: Upload Pages
         uses: actions/upload-pages-artifact@v3
         with:
           path: "."
 
-      - name: Deploy
+      - name: Deploy Pages
         uses: actions/deploy-pages@v4
