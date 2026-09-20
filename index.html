@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d10">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Football Hub</title>
+<style>
+:root{color-scheme:dark;--bg:#0b0d10;--card:#151922;--muted:#8e96a3;--accent:#31d158}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Arial,sans-serif}
+header{padding:52px 18px 14px;position:sticky;top:0;background:rgba(11,13,16,.92);backdrop-filter:blur(18px);z-index:5}
+h1{margin:0;font-size:31px}h2{font-size:21px;margin:24px 0 12px}.sub{color:var(--muted);margin-top:4px}
+main{padding:0 14px 100px}.tabs{display:flex;gap:8px;overflow:auto;padding:10px 0}.tabs button{border:0;background:#1c212b;color:#ddd;padding:9px 14px;border-radius:999px;white-space:nowrap}.tabs button.active{background:var(--accent);color:#071008;font-weight:700}
+.card{background:var(--card);border-radius:20px;padding:15px;margin:10px 0;box-shadow:0 8px 25px #0003}.league{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase}.match{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-top:12px}.team{text-align:center}.crest{font-size:31px}.score{text-align:center;font-size:22px;font-weight:800}.live{color:var(--accent);font-size:12px;font-weight:800;margin-top:3px}.event{display:flex;gap:10px;padding:11px 0;border-top:1px solid #ffffff10}.bottom{position:fixed;bottom:0;left:0;right:0;padding:8px max(10px,env(safe-area-inset-left)) max(8px,env(safe-area-inset-bottom));background:rgba(18,21,27,.96);backdrop-filter:blur(18px);display:flex;justify-content:space-around;border-top:1px solid #ffffff12}.bottom button{background:none;border:0;color:#8e96a3;font-size:11px}.bottom button.active{color:var(--accent)}.icon{font-size:20px;display:block;margin-bottom:2px}
+.search{width:100%;border:0;background:#171b23;color:#fff;border-radius:14px;padding:13px;font-size:16px;outline:none}
+</style>
+</head>
+<body>
+<header><h1>⚽ Football Hub</h1><div class="sub">Weltweiter Fußball · Live</div></header>
+<main id="app"></main>
+<nav class="bottom">
+<button onclick="show('home')" id="nav-home"><span class="icon">⌂</span>Home</button>
+<button onclick="show('live')" id="nav-live"><span class="icon">●</span>Live</button>
+<button onclick="show('games')" id="nav-games"><span class="icon">▣</span>Spiele</button>
+<button onclick="show('table')" id="nav-table"><span class="icon">☷</span>Tabelle</button>
+<button onclick="show('search')" id="nav-search"><span class="icon">⌕</span>Suche</button>
+</nav>
+<script>
+const matches=[
+{id:1,league:"Bundesliga",home:"Bayern München",away:"Dortmund",he:"🔴",ae:"🟡",hs:2,as:1,status:"LIVE",minute:67,events:[["18'","⚽","Bayern München","M. Beispiel"],["41'","🟨","Dortmund","J. Beispiel"],["63'","⚽","Dortmund","A. Beispiel"]]},
+{id:2,league:"Premier League",home:"Arsenal",away:"Liverpool",he:"🔴",ae:"🔴",hs:null,as:null,status:"20:00",minute:null,events:[]},
+{id:3,league:"LaLiga",home:"Barcelona",away:"Real Madrid",he:"🔵",ae:"⚪",hs:3,as:2,status:"BEENDET",minute:null,events:[]},
+{id:4,league:"Serie A",home:"Inter",away:"AC Milan",he:"🔵",ae:"🔴",hs:null,as:null,status:"21:00",minute:null,events:[]}
+];
+const leagues=["Alle","Bundesliga","Premier League","LaLiga","Serie A","Ligue 1","Champions League"];
+let page="home", league="Alle";
+function card(m){
+return `<div class="card"><div class="league">${m.league}</div><div class="match"><div class="team"><div class="crest">${m.he}</div><b>${m.home}</b></div><div class="score">${m.hs===null?"– : –":m.hs+" : "+m.as}<div class="${m.status==='LIVE'?'live':''}">${m.status}${m.minute?` · ${m.minute}'`:''}</div></div><div class="team"><div class="crest">${m.ae}</div><b>${m.away}</b></div></div></div>`;
+}
+function nav(){
+document.querySelectorAll(".bottom button").forEach(x=>x.classList.remove("active"));
+document.getElementById("nav-"+page)?.classList.add("active");
+}
+function show(p){page=p;nav();render()}
+function render(){
+let a=document.getElementById("app");
+if(page==="home"){a.innerHTML=`<h2>Jetzt live</h2>${matches.filter(m=>m.status==="LIVE").map(card).join("")}<h2>Heute</h2>${matches.map(card).join("")}`;return}
+if(page==="live"){a.innerHTML=`<h2>🔴 Live-Ticker</h2>${matches.filter(m=>m.status==="LIVE").map(m=>card(m)+m.events.map(e=>`<div class="card event"><b>${e[0]}</b><span>${e[1]}</span><span>${e[2]} · ${e[3]}</span></div>`).join("")).join("")||"<p class='sub'>Keine Live-Spiele.</p>"}`;return}
+if(page==="games"){a.innerHTML=`<h2>Spiele</h2><div class="tabs">${leagues.map(x=>`<button class="${x===league?'active':''}" onclick="league='${x}';render()">${x}</button>`).join("")}</div>${matches.filter(m=>league==="Alle"||m.league===league).map(card).join("")}`;return}
+if(page==="table"){a.innerHTML=`<h2>Bundesliga</h2><div class="card">${["Bayern München","Dortmund","Leverkusen","RB Leipzig","Frankfurt"].map((x,i)=>`<div class="event"><b>${i+1}</b><span>${x}</span><span style="margin-left:auto"><b>${13-i*2}</b> P</span></div>`).join("")}</div>`;return}
+if(page==="search"){a.innerHTML=`<h2>Suche</h2><input class="search" placeholder="Team, Spieler oder Liga" oninput="search(this.value)"><div id="results"></div>`}
+}
+function search(q){document.getElementById("results").innerHTML=matches.filter(m=>(m.home+m.away+m.league).toLowerCase().includes(q.toLowerCase())).map(card).join("")||"<p class='sub'>Keine Treffer.</p>"}
+nav();render();
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+</script>
+</body>
+</html>
